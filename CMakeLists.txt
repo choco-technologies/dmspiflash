@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 
+# The module is built per CPU family (as dmqspi / dmsdio): the family selects the
+# packages dmod_link_modules() downloads (their names carry it) and the tools
+# configuration. stm32f7 -> arch/armv7/cortex-m7, stm32f4 -> arch/armv7/cortex-m4.
+set(DMOD_CPU_FAMILY "stm32f7" CACHE STRING "Target CPU family")
+set(DMOD_TOOLS_NAME "arch/armv7/cortex-m7" CACHE STRING "Name of the tools configuration")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT DEFINED DMOD_MODULE_VERSION)
