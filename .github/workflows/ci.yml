@@ -23,8 +23,12 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake .. -DDMOD_MODE=DMOD_MODULE
-          cmake --build .
+          # The module and its test run natively on this runner, but DMOD_CPU_FAMILY stays
+          # at its default (stm32f7): the bus drivers' headers (dmqspi, dmgpio) are only
+          # published per stm32 family, so a x86_64 family would 404 (same as dmsdio's CI).
+          # Only the tools are switched to the host ones.
+          cmake .. -DDMOD_MODE=DMOD_MODULE -DDMOD_TOOLS_NAME=arch/x86_64
+          cmake --build . --target dmspiflash test_dmspiflash
 
       - name: Verify module files
         run: |
@@ -38,5 +42,7 @@ jobs:
       - name: Run tests with dmod_loader
         run: |
           export DMOD_DMF_DIR=$(pwd)/build/dmf
-          dmf-get install -d ${DMOD_DMF_DIR}/test_dmspiflash-local.dmd -y
+          # Runtime dependency of dmspiflash/test_dmspiflash (see build/dmf/dmspiflash.dmd);
+          # the bus drivers are headers only for the host test.
+          dmf-get install dmini -y
           dmod_loader build/dmf/test_dmspiflash.dmf
