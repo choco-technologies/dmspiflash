@@ -6,46 +6,31 @@
 #include <stddef.h>
 #include "dmod_types.h"
 #include "dmspiflash_defs.h"
+#include "dmspiflash_types.h"
 
-/**
- * Public API for the dmspiflash module.
- *
- * Functions are declared with the dmod_dmspiflash_api(...) macro - dmod's
- * standard pattern for functions callable from other modules (or from this
- * module's own tests/), resolved dynamically by the loader rather than
- * through normal static linkage. See dm_sw_ring/include/dm_sw_ring.h for a
- * fully worked real-world example of the same shape.
- *
- * Definitions in src/dmspiflash.c use the matching
- * dmod_dmspiflash_api_declaration(...) macro - a plain C function
- * definition here will NOT satisfy these declarations at link time.
- *
- * This is an example interface using the usual "opaque handle" pattern -
- * replace the handle, functions, and struct definition in
- * src/dmspiflash.c with your module's real API.
+/*
+ * dmspiflash = NOR flash chip driver. It sits on a bus node (/dev/dmqspi<N>
+ * or /dev/dmspi<N>) and exports a dmdrvi BLOCK DEVICE /dev/dmspiflash<N>.
+ * Clients (littlefs, automount, shell) use the node; they do not call this
+ * header. What is exported here are the pure helpers (no hardware), so they
+ * can be unit-tested on the host and reused by tools.
+ * See docs/architecture.md.
  */
 
-/* Opaque handle - the real struct is defined in src/dmspiflash.c */
-typedef struct dmspiflash* dmspiflash_t;
+/** Check a configuration without touching hardware. */
+dmod_dmspiflash_api(1.0, bool, _validate_config, ( const dmspiflash_config_t *config ));
+
+/** Find a chip-table row by JEDEC id. NULL = unknown chip. Valid for the module's lifetime. */
+dmod_dmspiflash_api(1.0, const dmspiflash_chip_t*, _find_chip_by_id, ( const dmspiflash_jedec_id_t *id ));
+
+/** Find a chip-table row by name (case-insensitive), for `chip=` in the .ini. NULL = unknown. */
+dmod_dmspiflash_api(1.0, const dmspiflash_chip_t*, _find_chip_by_name, ( const char *name ));
 
 /**
- * Create a new dmspiflash instance.
- *
- * @return A valid handle on success, or NULL on allocation failure.
+ * Size of the next program chunk: the bytes that fit in the page that
+ * `offset` is in, capped at `remaining` (page program wraps inside a page,
+ * it must never cross a boundary). Pure arithmetic.
  */
-dmod_dmspiflash_api(1.0, dmspiflash_t, _create, ( void ));
-
-/**
- * Destroy an instance created by dmspiflash_create(). Safe to call with
- * NULL.
- */
-dmod_dmspiflash_api(1.0, void, _destroy, ( dmspiflash_t handle ));
-
-/**
- * Example accessor - replace with your module's real API.
- *
- * @return true if handle is a valid, non-NULL instance.
- */
-dmod_dmspiflash_api(1.0, bool, _is_valid, ( dmspiflash_t handle ));
+dmod_dmspiflash_api(1.0, uint32_t, _page_chunk, ( uint32_t page_size, uint32_t offset, uint32_t remaining ));
 
 #endif // DMSPIFLASH_H

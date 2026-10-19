@@ -1,84 +1,64 @@
 #define DMOD_ENABLE_REGISTRATION ON
+#include <errno.h>
 #include "dmod.h"
+#include "dmdrvi.h"
+#include "dmini.h"
 #include "dmspiflash.h"
+#include "dmspiflash_internal.h"
 
-/* Example internal state - replace with your module's real fields. */
-struct dmspiflash
-{
-    bool valid;
-};
-
-dmod_dmspiflash_api_declaration(1.0, dmspiflash_t, _create, ( void ))
-{
-    /* Dmod_Malloc/Dmod_Free (SAL) are dmod's own heap functions - embedded
-     * targets don't necessarily link a libc allocator, so use these instead
-     * of malloc()/free() in module code. */
-    struct dmspiflash *instance = Dmod_Malloc(sizeof(*instance));
-    if (instance == NULL)
-    {
-        return NULL;
-    }
-
-    instance->valid = true;
-    return instance;
-}
-
-dmod_dmspiflash_api_declaration(1.0, void, _destroy, ( dmspiflash_t handle ))
-{
-    Dmod_Free(handle);
-}
-
-dmod_dmspiflash_api_declaration(1.0, bool, _is_valid, ( dmspiflash_t handle ))
-{
-    return handle != NULL && handle->valid;
-}
-
-/**
- * @brief Pre-initialization function for the module.
+/*
+ * Module entry, pure helpers and the dmdrvi driver ("driver_name=dmspiflash"
+ * in the board .ini). Registration (DMOD_ENABLE_REGISTRATION) lives only in this file.
  *
- * @note This function is optional. You can remove it if you don't need it.
+ * The dmdrvi functions are NOT IMPLEMENTED yet (docs/tasks.md, step 4).
+ * Copy the structure of dmsdio/src/dmsdio.c (block device) and
+ * dmspi/src/dmspi.c (friends). What each must do:
  *
- * This function is called when the module enabling is in progress.
- *
- * You can use this function to load the required dependencies, such as
- * other modules. Please be aware that the module is not fully initialized,
- * so not all the API functions are available - you can check if the API
- * is connected by calling the Dmod_IsFunctionConnected() function.
+ *   _create   : read keys (docs/configuration.md) -> dmspiflash_config_t,
+ *               dmspiflash_validate_config; allocate the context (magic guard,
+ *               Dmod_Malloc); find the bus node through the friends_group
+ *               (DMDRVI_IOCTL_DEVFS_GET_FRIEND) and wait for it in
+ *               _friend_changed; dmspiflash_bus_open; dmspiflash_core_open.
+ *               dev_num minor = index of the flash. Node: /dev/dmspiflash<N>.
+ *   _free     : leave memory-mapped mode, dmspiflash_bus_close, free
+ *   _open/_close/_flush/_stat : trivial (no per-handle state; flush = no-op,
+ *               writes finish before returning)
+ *   _read     : dmspiflash_core_read(offset, buf, size) - byte offsets
+ *   _write    : dmspiflash_core_write - area must be erased (block-device contract)
+ *   _ioctl    : DMDRVI_IOCTL_BLOCK_GET_INFO -> logical_block_size 512,
+ *                   erase_block_size = chip->sector_size, block_count = size/512,
+ *                   flags = DMDRVI_BLOCK_FLAG_ERASE_SUPPORTED;
+ *               DMDRVI_IOCTL_BLOCK_ERASE -> dmspiflash_core_erase (aligned, else -EINVAL);
+ *               DMSPIFLASH_IOCTL_* -> see dmspiflash_types.h.
  */
-void dmod_preinit(void)
+
+dmod_dmspiflash_api_declaration(1.0, bool, _validate_config, ( const dmspiflash_config_t *config ))
 {
-    if(Dmod_IsFunctionConnected( Dmod_Printf ))
-    {
-        Dmod_Printf("API is connected!\n");
-    }
+    if (config == NULL)
+        return false;
+    if (config->bus != dmspiflash_bus_spi && config->bus != dmspiflash_bus_qspi)
+        return false;
+    if (config->bus == dmspiflash_bus_spi && (config->use_quad || config->memory_mapped))
+        return false;       /* quad and XIP need the qspi bus */
+    return true;
 }
 
-/**
- * @brief Initialization function for the module.
- *
- * This function is called when the module is enabled.
- * Please use this function to initialize the module, for instance:
- * - initialize the module variables
- * - initialize the module hardware
- * - allocate memory
- */
+dmod_dmspiflash_api_declaration(1.0, uint32_t, _page_chunk, ( uint32_t page_size, uint32_t offset, uint32_t remaining ))
+{
+    if (page_size == 0)
+        return 0;
+    uint32_t room = page_size - (offset % page_size);
+    return remaining < room ? remaining : room;
+}
+
 int dmod_init(const Dmod_Config_t *Config)
 {
-    Dmod_Printf("Hello, World!\n");
+    (void)Config;
+    Dmod_Printf("dmspiflash: skeleton, not implemented yet\n");
     return 0;
 }
 
-/**
- * @brief De-initialization function for the module.
- *
- * This function is called when the module is disabled.
- * Please use this function to de-initialize the module, for instance:
- * - free memory
- * - de-initialize the module hardware
- * - de-initialize the module variables
- */
 int dmod_deinit(void)
 {
-    Dmod_Printf("Goodbye, World!\n");
     return 0;
 }

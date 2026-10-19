@@ -62,6 +62,11 @@ set(DMOD_DIF_IMPLS          )
 dmod_add_library(${DMOD_MODULE_NAME} ${DMOD_MODULE_VERSION}
     # List of source files - can include C and C++ files
     src/dmspiflash.c
+    src/dmspiflash_chips.c
+    src/dmspiflash_core.c
+    src/dmspiflash_bus.c
+    src/dmspiflash_bus_qspi.c
+    src/dmspiflash_bus_spi.c
 )
 
 target_include_directories(${DMOD_MODULE_NAME} PRIVATE
@@ -72,9 +77,18 @@ target_include_directories(${DMOD_MODULE_NAME}_if INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# To depend on another module's headers, use:
-#   dmod_link_modules(${DMOD_MODULE_NAME}
-#       other_module@1.0
-#   )
+# dmdrvi: driver interface + block ioctls; dmini: .ini parsing; dmosi: the lock.
+# The bus drivers and the pin driver are dependencies of THIS module on
+# purpose: the board configs shipped here (configs/) configure pins, the bus
+# and the chip in one .ini, so installing dmspiflash must pull in everything
+# that config needs (they land in dmspiflash.dmd and dmf-get fetches them).
+dmod_link_modules(${DMOD_MODULE_NAME}
+    dmdrvi@>=2.0
+    dmini
+    dmosi
+    dmgpio@>=1.1
+    dmqspi
+    dmspi
+)
 enable_testing()
 add_subdirectory(tests)

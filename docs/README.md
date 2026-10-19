@@ -4,7 +4,11 @@ Welcome to the dmspiflash module documentation.
 
 ## Contents
 
-- **[api-reference.md](api-reference.md)** - Complete API documentation
+- **[architecture.md](architecture.md)** - layers, block-device contract, flash operations
+- **[tasks.md](tasks.md)** - implementation plan, in order
+- **[configuration.md](configuration.md)** - .ini keys
+- **[chips.md](chips.md)** - supported chips
+- **[api-reference.md](api-reference.md)** - headers overview
 
 ## Quick Reference
 

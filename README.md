@@ -3,11 +3,26 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/choco-technologies/dmspiflash/actions/workflows/ci.yml/badge.svg)](https://github.com/choco-technologies/dmspiflash/actions/workflows/ci.yml)
 
-dmspiflash DMOD library module.
+dmspiflash - NOR flash chip driver for DMOD. **Status: skeleton** - interfaces and docs only, no implementation yet (see [docs/tasks.md](docs/tasks.md)).
 
 ## Description
 
-TODO: describe what this module does.
+dmspiflash drives a serial NOR flash chip (first target: the Micron N25Q128A,
+16 MB, on the STM32F746G-DISCO) that sits behind a bus driver, and exports it
+as a **dmdrvi block device** `/dev/dmspiflash<N>`: byte-offset read/write,
+`DMDRVI_IOCTL_BLOCK_GET_INFO` and `DMDRVI_IOCTL_BLOCK_ERASE`. File systems
+(littlefs, FAT), `automount` and `blkid` work on top of that node.
+
+It knows the chip (JEDEC id, page/sector sizes, quad-enable procedure, opcodes,
+timeouts) but not the hardware: the transport is a bus node.
+
+| Bus | Node | Repo |
+| --- | --- | --- |
+| QSPI (1 or 4 lines, memory-mapped) | `/dev/dmqspi<N>` | dmqspi |
+| plain SPI (1 line) | `/dev/dmspi<N>` + chip-select GPIO | dmspi |
+
+Start with [docs/architecture.md](docs/architecture.md); the implementation
+plan in order is [docs/tasks.md](docs/tasks.md).
 
 ## Building
 
