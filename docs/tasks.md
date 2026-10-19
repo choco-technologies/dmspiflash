@@ -1,5 +1,7 @@
 # Implementation plan (in this order, one PR per step)
 
+**Status:** steps 1-4 and 6 are DONE and verified on the STM32F746G-DISCO with `tools/flashtest` (block geometry, erase, page-crossing write, read-back, out-of-range refusal, memory-mapped window; `flashtest /dev/dmspiflashx/flash --xip`). Open: the plain-SPI bus layer (7), the file system (8). The node is `/dev/dmspiflashx/flash` (dmdevfs names it <driver>x/<section>).
+
 Needs the bus: **dmqspi** (repo dmqspi) for the QSPI path. Board: STM32F746G-DISCO. Workflow:
 `dmod-board-debugging` skill of dmod-boot. Read `docs/architecture.md` first. Host tests (`ctest`)
 cover the pure helpers; the rest is verified on the board.

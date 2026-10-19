@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 
+# The module is built per CPU family (as dmqspi / dmsdio): the family selects the
+# packages dmod_link_modules() downloads (their names carry it) and the tools
+# configuration. stm32f7 -> arch/armv7/cortex-m7, stm32f4 -> arch/armv7/cortex-m4.
+set(DMOD_CPU_FAMILY "stm32f7" CACHE STRING "Target CPU family")
+set(DMOD_TOOLS_NAME "arch/armv7/cortex-m7" CACHE STRING "Name of the tools configuration")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT DEFINED DMOD_MODULE_VERSION)
@@ -73,6 +79,12 @@ target_include_directories(${DMOD_MODULE_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+# Headers of the bus drivers (dmqspi_types.h): from the released package through
+# dmod_link_modules() above, or from a sibling checkout while dmqspi is not released.
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../dmqspi/include/dmqspi_types.h)
+    target_include_directories(${DMOD_MODULE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../dmqspi/include)
+endif()
+
 target_include_directories(${DMOD_MODULE_NAME}_if INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -92,3 +104,9 @@ dmod_link_modules(${DMOD_MODULE_NAME}
 )
 enable_testing()
 add_subdirectory(tests)
+
+# ======================================================================
+#               flashtest Tool
+# ======================================================================
+# On-board test of the block device node (tools/flashtest/main.c).
+add_subdirectory(tools/flashtest)

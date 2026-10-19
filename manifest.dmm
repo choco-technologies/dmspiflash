@@ -1,5 +1,7 @@
 # Include dynamically generated versions list from latest release
 $include https://github.com/choco-technologies/dmspiflash/releases/download/vlatest/versions.dmm
 
-# Module entry with version placeholder - expanded by $version-available
-dmspiflash https://github.com/choco-technologies/dmspiflash/releases/download/v<version>/dmspiflash-v<version>-<arch_name>.zip
+# Module entry with version placeholder - expanded by $version-available.
+# <cpu_family>, not <arch_name>: the release workflow packages this repo per DMOD_CPU_FAMILY
+# (see dmqspi/manifest.dmm).
+dmspiflash https://github.com/choco-technologies/dmspiflash/releases/download/v<version>/dmspiflash-v<version>-<cpu_family>.zip
