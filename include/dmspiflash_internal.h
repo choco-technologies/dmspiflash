@@ -38,7 +38,7 @@ typedef struct
 } dmspiflash_cmd_t;
 
 /** The opened device. Allocated with Dmod_Malloc in _create, magic-guarded. */
-struct dmspiflash
+struct dmdrvi_context
 {
     uint32_t                magic;
     dmspiflash_config_t     config;
@@ -47,23 +47,27 @@ struct dmspiflash
     char                   *bus_path;       /**< Heap string: "/dev/dmqspi1" - found through the friends_group */
     char                   *cs_path;        /**< SPI only: chip-select GPIO node, or NULL */
     void                   *lock;           /**< dmosi mutex: one flash operation at a time */
-    bool                    mapped;
+    bool                    mapped;         /* memory-mapped mode is on (qspi) */
+    bool                    ready;          /* bus opened and the chip identified */
 };
 
+#define DMSPIFLASH_MAGIC    0x44534650u     /* "DSFP" */
+
 /* --- bus layer (qspi / spi implementations; both return 0 or -errno) --- */
-int  dmspiflash_bus_open(struct dmspiflash *ctx);                       /**< Find + open the bus node */
-void dmspiflash_bus_close(struct dmspiflash *ctx);
-int  dmspiflash_bus_command(struct dmspiflash *ctx, const dmspiflash_cmd_t *cmd);
+int  dmspiflash_bus_open(struct dmdrvi_context *ctx);                       /**< Find + open the bus node */
+void dmspiflash_bus_close(struct dmdrvi_context *ctx);
+int  dmspiflash_bus_command(struct dmdrvi_context *ctx, const dmspiflash_cmd_t *cmd);
 /** Poll status (cmd = READ_STATUS) until (status & mask) == match or timeout_ms. */
-int  dmspiflash_bus_poll(struct dmspiflash *ctx, uint8_t status_opcode, uint32_t mask, uint32_t match, uint32_t timeout_ms);
-int  dmspiflash_bus_map(struct dmspiflash *ctx, bool enable);           /**< qspi only; spi returns -ENOTSUP */
-uintptr_t dmspiflash_bus_mapped_base(struct dmspiflash *ctx);           /**< 0 when not mapped */
+int  dmspiflash_bus_poll(struct dmdrvi_context *ctx, uint8_t status_opcode, uint32_t mask, uint32_t match, uint32_t timeout_ms);
+int  dmspiflash_bus_map(struct dmdrvi_context *ctx, bool enable);           /**< qspi only; spi returns -ENOTSUP */
+uintptr_t dmspiflash_bus_mapped_base(struct dmdrvi_context *ctx);           /**< 0 when not mapped */
+void dmspiflash_bus_invalidate(struct dmdrvi_context *ctx, uint32_t offset, uint32_t size); /**< D-cache of the mapped window */
 
 /* --- flash core --- */
-int  dmspiflash_core_open(struct dmspiflash *ctx);                      /**< reset, read id, find chip, enable quad */
-int  dmspiflash_core_read(struct dmspiflash *ctx, uint32_t offset, void *buffer, size_t size);
-int  dmspiflash_core_write(struct dmspiflash *ctx, uint32_t offset, const void *buffer, size_t size);
-int  dmspiflash_core_erase(struct dmspiflash *ctx, uint32_t offset, uint32_t size);
-int  dmspiflash_core_erase_chip(struct dmspiflash *ctx);
+int  dmspiflash_core_open(struct dmdrvi_context *ctx);                      /**< reset, read id, find chip, enable quad */
+int  dmspiflash_core_read(struct dmdrvi_context *ctx, uint32_t offset, void *buffer, size_t size);
+int  dmspiflash_core_write(struct dmdrvi_context *ctx, uint32_t offset, const void *buffer, size_t size);
+int  dmspiflash_core_erase(struct dmdrvi_context *ctx, uint32_t offset, uint32_t size);
+int  dmspiflash_core_erase_chip(struct dmdrvi_context *ctx);
 
 #endif // DMSPIFLASH_INTERNAL_H
