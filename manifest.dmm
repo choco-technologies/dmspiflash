@@ -2,6 +2,6 @@
 $include https://github.com/choco-technologies/dmspiflash/releases/download/vlatest/versions.dmm
 
 # Module entry with version placeholder - expanded by $version-available.
-# <cpu_family>, not <arch_name>: the release workflow packages this repo per DMOD_CPU_FAMILY
-# (see dmqspi/manifest.dmm).
-dmspiflash https://github.com/choco-technologies/dmspiflash/releases/download/v<version>/dmspiflash-v<version>-<cpu_family>.zip
+# <arch_name>: the release workflow packages this repo per architecture (dmspiflash-v<version>-armv7-cortex-m7.zip, ...),
+# not per CPU family (dmqspi has ports, so its packages are per family).
+dmspiflash https://github.com/choco-technologies/dmspiflash/releases/download/v<version>/dmspiflash-v<version>-<arch_name>.zip
