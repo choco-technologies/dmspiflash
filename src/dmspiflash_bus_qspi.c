@@ -89,6 +89,8 @@ int dmspiflash_qspi_map(struct dmdrvi_context *ctx, bool enable)
                               .has_address = true,
                               .address_lines = ctx->config.use_quad ? dmspiflash_lines_4 : dmspiflash_lines_1,
                               .dummy_cycles = ctx->config.use_quad ? ctx->chip->read_dummy_cycles : 8,
+                              .has_alternate = ctx->config.use_quad && (ctx->chip->flags & DMSPIFLASH_CHIP_READ_MODE_BYTE) != 0,
+                              .alternate = 0xFF,
                               .data_lines = ctx->config.use_quad ? dmspiflash_lines_4 : dmspiflash_lines_1,
                               .size = 1, .rx = (void *)1 };
     dmqspi_command_t q = to_qspi(ctx, &read);

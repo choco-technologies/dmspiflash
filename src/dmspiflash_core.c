@@ -76,12 +76,44 @@ static int select_chip(struct dmdrvi_context *ctx, const dmspiflash_jedec_id_t *
     return 0;
 }
 
+/* Winbond: the QE bit of status register 2, set volatile (0x50 + 0x31) when the chip does not
+ * have it already (some part numbers come with it set for good) - no wear of the register */
+static int enable_quad_status_qe(struct dmdrvi_context *ctx)
+{
+    uint8_t sr2 = 0;
+    int ret = cmd_read(ctx, DMSPIFLASH_CMD_READ_STATUS_2, &sr2, 1);
+    if (ret != 0 || (sr2 & DMSPIFLASH_STATUS2_QE) != 0)
+        return ret;
+    dmspiflash_cmd_t volatile_enable = cmd_plain(DMSPIFLASH_CMD_VOLATILE_SR_ENABLE);
+    uint8_t value = (uint8_t)(sr2 | DMSPIFLASH_STATUS2_QE);
+    dmspiflash_cmd_t write = cmd_plain(DMSPIFLASH_CMD_WRITE_STATUS_2);
+    write.data_lines = dmspiflash_lines_1;
+    write.tx = &value;
+    write.size = 1;
+    ret = dmspiflash_bus_command(ctx, &volatile_enable);
+    if (ret == 0)
+        ret = dmspiflash_bus_command(ctx, &write);
+    if (ret == 0)
+        ret = dmspiflash_bus_poll(ctx, DMSPIFLASH_CMD_READ_STATUS, DMSPIFLASH_STATUS_WIP, 0, 50);
+    if (ret == 0)
+        ret = cmd_read(ctx, DMSPIFLASH_CMD_READ_STATUS_2, &sr2, 1);
+    if (ret == 0 && (sr2 & DMSPIFLASH_STATUS2_QE) == 0)
+    {
+        DMOD_LOG_ERROR("dmspiflash: %s does not take the QE bit (status 2: %02x)\n", ctx->chip->name, sr2);
+        ret = -EIO;
+    }
+    return ret;
+}
+
 /* The chip's quad mode. Micron N25Q: 0xEB works in the reset default (extended SPI protocol,
- * 10 dummy cycles), nothing to enable. The other vendors need their QE bit - not implemented. */
+ * 10 dummy cycles), nothing to enable. Winbond: the QE bit. Macronix - not implemented. */
 static int enable_quad(struct dmdrvi_context *ctx)
 {
-    if (!ctx->config.use_quad || ctx->chip->quad_enable == dmspiflash_quad_micron_vcr)
+    if (!ctx->config.use_quad || ctx->chip->quad_enable == dmspiflash_quad_micron_vcr ||
+        ctx->chip->quad_enable == dmspiflash_quad_none)
         return 0;
+    if (ctx->chip->quad_enable == dmspiflash_quad_status_qe)
+        return enable_quad_status_qe(ctx);
     DMOD_LOG_ERROR("dmspiflash: quad enable of '%s' is not implemented\n", ctx->chip->name);
     return -ENOTSUP;
 }
@@ -141,6 +173,8 @@ static int read_chunk(struct dmdrvi_context *ctx, uint32_t offset, uint8_t *out,
     dmspiflash_cmd_t c = cmd_addr(quad ? DMSPIFLASH_CMD_FAST_READ_QUAD_IO : DMSPIFLASH_CMD_FAST_READ,
                                   offset, quad ? dmspiflash_lines_4 : dmspiflash_lines_1);
     c.dummy_cycles = quad ? ctx->chip->read_dummy_cycles : 8;
+    c.has_alternate = quad && (ctx->chip->flags & DMSPIFLASH_CHIP_READ_MODE_BYTE) != 0;
+    c.alternate = 0xFF;
     c.data_lines = quad ? dmspiflash_lines_4 : dmspiflash_lines_1;
     c.rx = out;
     c.size = size;
