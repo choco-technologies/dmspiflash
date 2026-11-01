@@ -11,6 +11,9 @@
 #define DMSPIFLASH_CMD_WRITE_DISABLE        0x04
 #define DMSPIFLASH_CMD_READ_STATUS          0x05    /**< Bit 0 WIP, bit 1 WEL */
 #define DMSPIFLASH_CMD_WRITE_STATUS         0x01
+#define DMSPIFLASH_CMD_READ_STATUS_2        0x35    /**< Winbond: bit 1 QE */
+#define DMSPIFLASH_CMD_WRITE_STATUS_2       0x31
+#define DMSPIFLASH_CMD_VOLATILE_SR_ENABLE   0x50    /**< Winbond: the next status write is volatile (no WREN, no wear) */
 #define DMSPIFLASH_CMD_READ_FLAG_STATUS     0x70    /**< Micron: bit 7 ready, bit 5 erase err, bit 4 program err */
 #define DMSPIFLASH_CMD_CLEAR_FLAG_STATUS    0x50
 #define DMSPIFLASH_CMD_READ_ENH_VOLATILE    0x65    /**< Micron */
@@ -31,5 +34,6 @@
 
 #define DMSPIFLASH_STATUS_WIP               (1u << 0)
 #define DMSPIFLASH_STATUS_WEL               (1u << 1)
+#define DMSPIFLASH_STATUS2_QE               (1u << 1)
 
 #endif // DMSPIFLASH_CMDS_H

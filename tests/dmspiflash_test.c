@@ -25,6 +25,16 @@ DMOD_TEST_STEP(find_chip_by_id)
     DMOD_TEST_EXPECT_TRUE(chip->size_bytes == 16u * 1024u * 1024u);
 }
 
+DMOD_TEST_STEP(find_chip_winbond_by_id)
+{
+    dmspiflash_jedec_id_t id = { .manufacturer = 0xEF, .memory_type = 0x40, .capacity = 0x18 };
+    const dmspiflash_chip_t *chip = dmspiflash_find_chip_by_id(&id);
+    DMOD_TEST_EXPECT_NOT_NULL(chip);
+    DMOD_TEST_EXPECT_TRUE(chip->quad_enable == dmspiflash_quad_status_qe);
+    DMOD_TEST_EXPECT_TRUE((chip->flags & DMSPIFLASH_CHIP_FLAG_STATUS) == 0);
+    DMOD_TEST_EXPECT_TRUE((chip->flags & DMSPIFLASH_CHIP_READ_MODE_BYTE) != 0);
+}
+
 DMOD_TEST_STEP(find_chip_unknown_id)
 {
     dmspiflash_jedec_id_t id = { .manufacturer = 0xFF, .memory_type = 0xFF, .capacity = 0xFF };

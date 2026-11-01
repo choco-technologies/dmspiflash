@@ -29,6 +29,7 @@ typedef enum
 #define DMSPIFLASH_CHIP_ERASE_64K       (1u << 1)   /**< Opcode 0xD8 works */
 #define DMSPIFLASH_CHIP_QUAD_PROGRAM    (1u << 2)   /**< Opcode 0x32 works */
 #define DMSPIFLASH_CHIP_FLAG_STATUS     (1u << 3)   /**< Micron flag status register (0x70) reports program/erase errors */
+#define DMSPIFLASH_CHIP_READ_MODE_BYTE  (1u << 4)   /**< 0xEB takes a mode byte before its dummy cycles (sent 0xFF: no continuous read) */
 
 /** JEDEC identification (opcode 0x9F, 3 bytes). */
 typedef struct

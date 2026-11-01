@@ -25,6 +25,23 @@ static const dmspiflash_chip_t g_chips[] =
         .sector_erase_ms = 800,
         .chip_erase_ms = 250000,
     },
+    /* STM32F746G-DISCO (later boards): Winbond W25Q128JV, 3 V, 128 Mbit. 0xEB: mode byte
+     * (2 cycles) + 4 dummy cycles, up to 133 MHz */
+    {
+        .name = "W25Q128JV",
+        .id = { .manufacturer = 0xEF, .memory_type = 0x40, .capacity = 0x18 },
+        .size_bytes = 16u * 1024u * 1024u,
+        .page_size = 256,
+        .sector_size = 4096,
+        .block_size = 65536,
+        .quad_enable = dmspiflash_quad_status_qe,
+        .read_dummy_cycles = 4,
+        .flags = DMSPIFLASH_CHIP_ERASE_4K | DMSPIFLASH_CHIP_ERASE_64K |
+                 DMSPIFLASH_CHIP_QUAD_PROGRAM | DMSPIFLASH_CHIP_READ_MODE_BYTE,
+        .page_program_ms = 3,
+        .sector_erase_ms = 400,
+        .chip_erase_ms = 200000,
+    },
 };
 
 #define CHIPS_COUNT (sizeof(g_chips) / sizeof(g_chips[0]))
